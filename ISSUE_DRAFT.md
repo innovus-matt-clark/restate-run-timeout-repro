@@ -2,13 +2,17 @@
 <!-- Title: -->
 # [Kotlin] `runAsync` future silently returns `null` when awaited through `withTimeout` / `await(duration)`
 
+## Context
+
+We're building a small library of durable orchestration primitives on top of the Kotlin SDK for our backend services. One of them is a fan-out/scatter-gather helper: it dispatches a batch of items as durable futures with bounded parallelism, arms a per-item timeout on each via `withTimeout`, and partitions the outcomes into succeeded/failed/timed-out. Per-item timeouts over `runAsync` work are a natural fit for that shape — which is how we ran into this.
+
 ## Summary
 
 In the Kotlin SDK, awaiting a `ctx.runAsync` (run) future **through a timeout combinator** — either `.withTimeout(duration).await()` or `.await(duration)` — silently corrupts the result: the workflow completes "successfully" but the run block's value is replaced by `null`. No `TimeoutException` is thrown and nothing fails; the wrong value is just returned, so the corruption propagates into journaled workflow state and the workflow's response.
 
 The same combinators over an **awakeable** future work correctly, and a **bare** `runAsync(...).await()` (no timeout) works correctly — the defect is specific to the timeout-combinator-over-run-future composition.
 
-We originally hit this inside a fan-out primitive that armed a per-item `withTimeout` on dispatched futures: with `runAsync` dispatchers a single item returned a wrong value and a multi-item batch produced garbage for every item. We've worked around it by rejecting run futures at the API boundary, but the failure mode is silent data corruption, so it seemed important to report.
+In the fan-out helper described above, this surfaced as a single item returning a wrong value and a multi-item batch producing garbage for every item. We've worked around it by rejecting run futures at the helper's API boundary, but the failure mode is silent data corruption, so it seemed important to report.
 
 ## Reproduction
 
