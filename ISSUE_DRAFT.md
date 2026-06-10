@@ -12,7 +12,7 @@ We originally hit this inside a fan-out primitive that armed a per-item `withTim
 
 ## Reproduction
 
-Full self-contained project attached/linked (Gradle, one workflow, one JUnit class using `RestateRunner` from `sdk-testing`). The core of it:
+Full self-contained project: https://github.com/innovus-matt-clark/restate-run-timeout-repro (Gradle, one workflow, one JUnit class using `RestateRunner` from `sdk-testing`; `./gradlew test`, Docker required, `-PrestateVersion=` switch). The core of it:
 
 ```kotlin
 @Workflow
